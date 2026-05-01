@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM File Naming Generator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #f7f7f5; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+  .card { background: #fff; border-radius: 16px; border: 1px solid #e5e5e0; padding: 2.5rem; width: 100%; max-width: 780px; }
+  .header { margin-bottom: 2rem; }
+  .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: #888; margin-bottom: 6px; }
+  .title { font-size: 22px; font-weight: 600; color: #1a1a1a; }
+  .subtitle { font-size: 13px; color: #888; margin-top: 4px; }
+  .fields-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #555; }
+  .field label .req { color: #3B6D11; margin-left: 2px; }
+  .field select, .field input[type=text] { font-size: 13px; border-radius: 8px; border: 1px solid #ddd; background: #fafafa; color: #1a1a1a; padding: 9px 11px; width: 100%; appearance: none; -webkit-appearance: none; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+  .field select:focus, .field input[type=text]:focus { outline: none; border-color: #639922; box-shadow: 0 0 0 3px rgba(99,153,34,0.12); background: #fff; }
+  .field select:hover, .field input[type=text]:hover { border-color: #aaa; }
+  .output-area { background: #f4f7f0; border: 1px solid #d4e8b8; border-radius: 12px; padding: 1.25rem 1.5rem; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
+  .output-label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #3B6D11; margin-bottom: 8px; }
+  .output-row { display: flex; align-items: center; gap: 12px; }
+  .fname { flex: 1; font-family: "SF Mono", "Fira Code", "Courier New", monospace; font-size: 15px; font-weight: 500; color: #1a1a1a; word-break: break-all; line-height: 1.5; }
+  .fname.empty { color: #aaa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 400; }
+  .fname.nudge { color: #BA7517; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 400; }
+  .copy-btn { flex-shrink: 0; display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: 1px solid #c5dfa0; background: #fff; color: #3B6D11; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .copy-btn:hover { background: #EAF3DE; border-color: #639922; }
+  .copy-btn.copied { background: #EAF3DE; border-color: #639922; }
+  .copy-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .segments { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; align-items: center; }
+  .seg { font-size: 11px; padding: 3px 9px; border-radius: 99px; font-family: "SF Mono", "Fira Code", "Courier New", monospace; font-weight: 600; }
+  .seg.date  { background: #dbeafe; color: #1e40af; }
+  .seg.type  { background: #dcfce7; color: #166534; }
+  .seg.chan  { background: #ede9fe; color: #5b21b6; }
+  .seg.region{ background: #fef3c7; color: #92400e; }
+  .seg.proj  { background: #f1f5f9; color: #475569; }
+  .seg-sep { font-size: 12px; color: #bbb; font-weight: 500; }
+  .footer { display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; }
+  .reset-btn { font-size: 12px; color: #aaa; background: none; border: none; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; padding: 0; }
+  .reset-btn:hover { color: #666; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; }
+  .leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #888; }
+  .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+  hr { border: none; border-top: 1px solid #eee; margin: 1.5rem 0; }
+  .cheat { margin-top: 0; }
+  .cheat-title { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 10px; }
+  .cheat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .cheat-section h4 { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #3B6D11; margin-bottom: 6px; }
+  .cheat-row { display: flex; gap: 8px; margin-bottom: 4px; align-items: baseline; }
+  .cheat-code { font-family: "SF Mono","Fira Code","Courier New",monospace; font-size: 11px; font-weight: 700; color: #1a1a1a; min-width: 54px; }
+  .cheat-desc { font-size: 11px; color: #666; line-height: 1.4; }
+  details summary { font-size: 11px; color: #888; cursor: pointer; list-style: none; display: flex; align-items: center; gap: 4px; margin-top: 1rem; }
+  details summary::-webkit-details-marker { display: none; }
+  details[open] summary { color: #555; margin-bottom: 0.75rem; }
+  .chevron { transition: transform 0.2s; font-style: normal; }
+  details[open] .chevron { transform: rotate(90deg); display: inline-block; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="eyebrow">Performance Marketing</div>
+    <div class="title">File Naming Generator</div>
+    <div class="subtitle">Select values below — your standardised file name is generated instantly</div>
+  </div>
+
+  <div class="fields-row">
+    <div class="field">
+      <label>Date</label>
+      <input type="text" id="f-date" placeholder="YYYY-MM-DD" />
+    </div>
+    <div class="field">
+      <label>Type <span class="req">★</span></label>
+      <select id="f-type">
+        <option value="">Select…</option>
+        <option value="PLAN">PLAN — Strategy & Planning</option>
+        <option value="REPORT">REPORT — Performance & Analytics</option>
+        <option value="ASSET">ASSET — Creative & Content</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Channel <span class="req">★</span></label>
+      <select id="f-chan">
+        <option value="">Select…</option>
+        <option value="GADW">GADW — Google Ads</option>
+        <option value="PMAX">PMAX — Performance Max</option>
+        <option value="INST">INST — Instagram</option>
+        <option value="DISP">DISP — Display</option>
+        <option value="TKOK">TKOK — TikTok</option>
+        <option value="VIDO">VIDO — Video & YouTube</option>
+        <option value="CCTV">CCTV — Connected TV</option>
+        <option value="AFFL">AFFL — Affiliate</option>
+        <option value="OMNI">OMNI — Multi-channel</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Region</label>
+      <select id="f-region">
+        <option value="">GLOBAL (default)</option>
+        <option value="GLOBAL">GLOBAL</option>
+        <option value="EMEA">EMEA</option>
+        <option value="APAC">APAC</option>
+        <option value="AMER">AMER</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Project name</label>
+      <input type="text" id="f-proj" placeholder="Optional" />
+    </div>
+  </div>
+
+  <div class="output-area">
+    <div class="output-label">Generated file name</div>
+    <div class="output-row">
+      <div class="fname empty" id="fname-display">Select Type and Channel to generate your file name</div>
+      <button class="copy-btn" id="copy-btn" onclick="copyName()" style="display:none">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>
+        Copy
+      </button>
+    </div>
+    <div class="segments" id="seg-row" style="display:none"></div>
+  </div>
+
+  <div class="footer">
+    <button class="reset-btn" onclick="resetAll()">Reset</button>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#93c5fd"></div>Date</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#86efac"></div>Type</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#c4b5fd"></div>Channel</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#fcd34d"></div>Region</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#cbd5e1"></div>Project</div>
+    </div>
+  </div>
+
+  <details>
+    <summary><span class="chevron">›</span> Code reference</summary>
+    <hr style="margin-top:0">
+    <div class="cheat-grid">
+      <div class="cheat-section">
+        <h4>Type</h4>
+        <div class="cheat-row"><span class="cheat-code">PLAN</span><span class="cheat-desc">Strategy & Planning</span></div>
+        <div class="cheat-row"><span class="cheat-code">REPORT</span><span class="cheat-desc">Performance & Analytics</span></div>
+        <div class="cheat-row"><span class="cheat-code">ASSET</span><span class="cheat-desc">Creative & Content</span></div>
+        <h4 style="margin-top:12px">Region</h4>
+        <div class="cheat-row"><span class="cheat-code">GLOBAL</span><span class="cheat-desc">All markets (default)</span></div>
+        <div class="cheat-row"><span class="cheat-code">EMEA</span><span class="cheat-desc">Europe, Middle East & Africa</span></div>
+        <div class="cheat-row"><span class="cheat-code">APAC</span><span class="cheat-desc">Asia-Pacific</span></div>
+        <div class="cheat-row"><span class="cheat-code">AMER</span><span class="cheat-desc">Americas</span></div>
+      </div>
+      <div class="cheat-section">
+        <h4>Channel</h4>
+        <div class="cheat-row"><span class="cheat-code">GADW</span><span class="cheat-desc">Google Ads</span></div>
+        <div class="cheat-row"><span class="cheat-code">PMAX</span><span class="cheat-desc">Performance Max</span></div>
+        <div class="cheat-row"><span class="cheat-code">INST</span><span class="cheat-desc">Instagram</span></div>
+        <div class="cheat-row"><span class="cheat-code">DISP</span><span class="cheat-desc">Display</span></div>
+        <div class="cheat-row"><span class="cheat-code">TKOK</span><span class="cheat-desc">TikTok</span></div>
+        <div class="cheat-row"><span class="cheat-code">VIDO</span><span class="cheat-desc">Video & YouTube</span></div>
+        <div class="cheat-row"><span class="cheat-code">CCTV</span><span class="cheat-desc">Connected TV</span></div>
+        <div class="cheat-row"><span class="cheat-code">AFFL</span><span class="cheat-desc">Affiliate</span></div>
+        <div class="cheat-row"><span class="cheat-code">OMNI</span><span class="cheat-desc">Multi-channel</span></div>
+      </div>
+    </div>
+  </details>
+</div>
+
+<script>
+  const today = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const todayStr = today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
+  document.getElementById('f-date').value = todayStr;
+
+  function slugify(s){ return s.trim().replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-_]/g,''); }
+
+  function generate(){
+    const date = document.getElementById('f-date').value || todayStr;
+    const type = document.getElementById('f-type').value;
+    const chan = document.getElementById('f-chan').value;
+    const region = document.getElementById('f-region').value || 'GLOBAL';
+    const proj = document.getElementById('f-proj').value;
+    const display = document.getElementById('fname-display');
+    const copyBtn = document.getElementById('copy-btn');
+    const segRow = document.getElementById('seg-row');
+
+    if(!type && !chan){ display.textContent='Select Type and Channel to generate your file name'; display.className='fname empty'; copyBtn.style.display='none'; segRow.style.display='none'; return; }
+    if(!type||!chan){ display.textContent=type?'Now select a Channel…':'Now select a Type…'; display.className='fname nudge'; copyBtn.style.display='none'; segRow.style.display='none'; return; }
+
+    const projSlug = proj ? slugify(proj) : 'NA';
+    const fname = [date, type, chan, region, projSlug].join('_');
+    display.textContent = fname;
+    display.className = 'fname';
+    copyBtn.style.display = 'flex';
+    copyBtn.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>Copy`;
+
+    const segs = [{val:date,cls:'date'},{val:type,cls:'type'},{val:chan,cls:'chan'},{val:region,cls:'region'},{val:projSlug,cls:'proj'}];
+    segRow.style.display='flex';
+    segRow.innerHTML=segs.map((s,i)=>(i>0?`<span class="seg-sep">_</span>`:'')+`<span class="seg ${s.cls}">${s.val}</span>`).join('');
+  }
+
+  function copyName(){
+    const text = document.getElementById('fname-display').textContent;
+    const btn = document.getElementById('copy-btn');
+    navigator.clipboard.writeText(text).then(()=>{
+      btn.innerHTML=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><polyline points="2 8 6 12 14 4"/></svg>Copied`;
+      btn.classList.add('copied');
+      setTimeout(()=>{ btn.innerHTML=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>Copy`; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  function resetAll(){
+    ['f-type','f-chan','f-region'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f-proj').value='';
+    document.getElementById('f-date').value=todayStr;
+    generate();
+  }
+
+  ['f-date','f-type','f-chan','f-region','f-proj'].forEach(id=>{ const el=document.getElementById(id); el.addEventListener('change',generate); el.addEventListener('input',generate); });
+</script>
+</body>
+</html>
