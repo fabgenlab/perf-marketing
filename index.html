@@ -20,6 +20,15 @@
   .field select:focus, .field input[type=text]:focus { outline: none; border-color: #639922; box-shadow: 0 0 0 3px rgba(99,153,34,0.12); background: #fff; }
   .field select:hover, .field input[type=text]:hover { border-color: #aaa; }
   optgroup { font-size: 11px; font-weight: 700; color: #888; }
+  .mode-toggle { display: flex; gap: 0; margin-bottom: 1.75rem; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; width: fit-content; }
+  .mode-btn { padding: 7px 18px; font-size: 12px; font-weight: 600; border: none; cursor: pointer; transition: all 0.15s; background: #fafafa; color: #888; }
+  .mode-btn.active { background: #3B6D11; color: #fff; }
+  .mode-btn:first-child { border-right: 1px solid #ddd; }
+  .field.hidden { display: none; }
+  .output-area.folder-mode { background: #f0f4fe; border-color: #b8ccf8; }
+  .output-area.folder-mode .output-label { color: #1e40af; }
+  .folder-path { font-size: 12px; color: #6b7280; margin-top: 8px; font-family: "SF Mono","Fira Code","Courier New",monospace; line-height: 1.8; }
+  .folder-path span { color: #3B6D11; font-weight: 600; }
   .output-area { background: #f4f7f0; border: 1px solid #d4e8b8; border-radius: 12px; padding: 1.25rem 1.5rem; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
   .output-label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #3B6D11; margin-bottom: 8px; }
   .output-row { display: flex; align-items: center; gap: 12px; }
@@ -69,8 +78,13 @@
 
 
 
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="btn-file" onclick="setMode('file')">📄 File name</button>
+    <button class="mode-btn" id="btn-folder" onclick="setMode('folder')">📁 Folder name</button>
+  </div>
+
   <div class="fields-row">
-    <div class="field">
+    <div class="field" id="field-date">
       <label>Date</label>
       <input type="text" id="f-date" placeholder="YYYY-MM-DD" />
     </div>
@@ -143,6 +157,7 @@
       </button>
     </div>
     <div class="segments" id="seg-row" style="display:none"></div>
+    <div class="folder-path" id="folder-path" style="display:none"></div>
   </div>
 
   <div class="footer">
@@ -220,13 +235,27 @@
       As our file library grows across channels, regions and teams, a shared naming structure saves everyone time — no more hunting for last week's report or wondering which version is final. This generator ensures every file is instantly readable, searchable and consistently named, whether it lives in Google Drive, Slack or a campaign folder.
     </p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0;">
-      If you work on a specific project or channel that doesn't fit the current taxonomy, don't improvise — just <a href="mailto:fabien@yourcompany.com" style="color:#3B6D11;font-weight:600;text-decoration:none;border-bottom:1px solid #c5dfa0;">reach out to Fabien</a> and we'll add it to the standard together.
+      If you work on a specific project or channel that doesn't fit the current taxonomy, don't improvise — just <a href="mailto:fabien@parasym.co" style="color:#3B6D11;font-weight:600;text-decoration:none;border-bottom:1px solid #c5dfa0;">reach out to Fabien</a> and we'll add it to the standard together.
     </p>
   </div>
 
 </div>
 
 <script>
+  let currentMode = 'file';
+
+  function setMode(mode){
+    currentMode = mode;
+    document.getElementById('btn-file').classList.toggle('active', mode==='file');
+    document.getElementById('btn-folder').classList.toggle('active', mode==='folder');
+    document.getElementById('field-date').classList.toggle('hidden', mode==='folder');
+    const area = document.querySelector('.output-area');
+    area.classList.toggle('folder-mode', mode==='folder');
+    const label = document.querySelector('.output-label');
+    label.textContent = mode==='file' ? 'Generated file name' : 'Generated folder name';
+    generate();
+  }
+
   const today = new Date();
   const pad = n => String(n).padStart(2,'0');
   const todayStr = today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
@@ -247,16 +276,40 @@
     if(!type && !chan){ display.textContent='Select Type and Channel to generate your file name'; display.className='fname empty'; copyBtn.style.display='none'; segRow.style.display='none'; return; }
     if(!type||!chan){ display.textContent=type?'Now select a Channel…':'Now select a Type…'; display.className='fname nudge'; copyBtn.style.display='none'; segRow.style.display='none'; return; }
 
-    const projSlug = proj ? '_' + slugify(proj) : '';
-    const fname = [date, type, chan, region].join('_') + projSlug;
-    display.textContent = fname;
-    display.className = 'fname';
-    copyBtn.style.display = 'flex';
-    copyBtn.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>Copy`;
+    const folderPath = document.getElementById('folder-path');
 
-    const segs = [{val:date,cls:'date'},{val:type,cls:'type'},{val:chan,cls:'chan'},{val:region,cls:'region'},...(proj?[{val:slugify(proj),cls:'proj'}]:[])];
-    segRow.style.display='flex';
-    segRow.innerHTML=segs.map((s,i)=>(i>0?`<span class="seg-sep">_</span>`:'')+`<span class="seg ${s.cls}">${s.val}</span>`).join('');
+    if(currentMode === 'folder'){
+      const parts = [type, chan];
+      if(region && region !== 'GLOBAL') parts.push(region);
+      if(proj) parts.push(slugify(proj));
+      const folderName = parts.join('_');
+      display.textContent = folderName;
+      display.className = 'fname';
+      copyBtn.style.display = 'flex';
+      copyBtn.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>Copy`;
+      segRow.style.display = 'none';
+      // Build visual folder path
+      const pathParts = [type, chan];
+      if(region && region !== 'GLOBAL') pathParts.push(region);
+      if(proj) pathParts.push(slugify(proj));
+      folderPath.style.display = 'block';
+      folderPath.innerHTML = pathParts.map((p,i) => {
+        const indent = '&nbsp;&nbsp;&nbsp;'.repeat(i);
+        const arrow = i > 0 ? '└── ' : '';
+        return `${indent}${arrow}<span>${p}/</span>`;
+      }).join('<br>');
+    } else {
+      folderPath.style.display = 'none';
+      const projSlug = proj ? '_' + slugify(proj) : '';
+      const fname = [date, type, chan, region].join('_') + projSlug;
+      display.textContent = fname;
+      display.className = 'fname';
+      copyBtn.style.display = 'flex';
+      copyBtn.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>Copy`;
+      const segs = [{val:date,cls:'date'},{val:type,cls:'type'},{val:chan,cls:'chan'},{val:region,cls:'region'},...(proj?[{val:slugify(proj),cls:'proj'}]:[])];
+      segRow.style.display='flex';
+      segRow.innerHTML=segs.map((s,i)=>(i>0?`<span class="seg-sep">_</span>`:'')+`<span class="seg ${s.cls}">${s.val}</span>`).join('');
+    }
   }
 
   function copyName(){
