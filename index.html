@@ -235,14 +235,14 @@
     if(!type && !chan){ display.textContent='Select Type and Channel to generate your file name'; display.className='fname empty'; copyBtn.style.display='none'; segRow.style.display='none'; return; }
     if(!type||!chan){ display.textContent=type?'Now select a Channel…':'Now select a Type…'; display.className='fname nudge'; copyBtn.style.display='none'; segRow.style.display='none'; return; }
 
-    const projSlug = proj ? slugify(proj) : 'NA';
-    const fname = [date, type, chan, region, projSlug].join('_');
+    const projSlug = proj ? '_' + slugify(proj) : '';
+    const fname = [date, type, chan, region].join('_') + projSlug;
     display.textContent = fname;
     display.className = 'fname';
     copyBtn.style.display = 'flex';
     copyBtn.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>Copy`;
 
-    const segs = [{val:date,cls:'date'},{val:type,cls:'type'},{val:chan,cls:'chan'},{val:region,cls:'region'},{val:projSlug,cls:'proj'}];
+    const segs = [{val:date,cls:'date'},{val:type,cls:'type'},{val:chan,cls:'chan'},{val:region,cls:'region'},...(proj?[{val:slugify(proj),cls:'proj'}]:[])];
     segRow.style.display='flex';
     segRow.innerHTML=segs.map((s,i)=>(i>0?`<span class="seg-sep">_</span>`:'')+`<span class="seg ${s.cls}">${s.val}</span>`).join('');
   }
