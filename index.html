@@ -7,7 +7,7 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #f7f7f5; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
-  .card { background: #fff; border-radius: 16px; border: 1px solid #e5e5e0; padding: 2.5rem; width: 100%; max-width: 780px; }
+  .card { background: #fff; border-radius: 16px; border: 1px solid #e5e5e0; padding: 2.5rem; width: 100%; max-width: 860px; }
   .header { margin-bottom: 2rem; }
   .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: #888; margin-bottom: 6px; }
   .title { font-size: 22px; font-weight: 600; color: #1a1a1a; }
@@ -19,6 +19,7 @@
   .field select, .field input[type=text] { font-size: 13px; border-radius: 8px; border: 1px solid #ddd; background: #fafafa; color: #1a1a1a; padding: 9px 11px; width: 100%; appearance: none; -webkit-appearance: none; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
   .field select:focus, .field input[type=text]:focus { outline: none; border-color: #639922; box-shadow: 0 0 0 3px rgba(99,153,34,0.12); background: #fff; }
   .field select:hover, .field input[type=text]:hover { border-color: #aaa; }
+  optgroup { font-size: 11px; font-weight: 700; color: #888; }
   .output-area { background: #f4f7f0; border: 1px solid #d4e8b8; border-radius: 12px; padding: 1.25rem 1.5rem; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
   .output-label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #3B6D11; margin-bottom: 8px; }
   .output-row { display: flex; align-items: center; gap: 12px; }
@@ -26,36 +27,36 @@
   .fname.empty { color: #aaa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 400; }
   .fname.nudge { color: #BA7517; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 400; }
   .copy-btn { flex-shrink: 0; display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: 1px solid #c5dfa0; background: #fff; color: #3B6D11; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
-  .copy-btn:hover { background: #EAF3DE; border-color: #639922; }
-  .copy-btn.copied { background: #EAF3DE; border-color: #639922; }
+  .copy-btn:hover, .copy-btn.copied { background: #EAF3DE; border-color: #639922; }
   .copy-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
   .segments { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; align-items: center; }
   .seg { font-size: 11px; padding: 3px 9px; border-radius: 99px; font-family: "SF Mono", "Fira Code", "Courier New", monospace; font-weight: 600; }
-  .seg.date  { background: #dbeafe; color: #1e40af; }
-  .seg.type  { background: #dcfce7; color: #166534; }
-  .seg.chan  { background: #ede9fe; color: #5b21b6; }
-  .seg.region{ background: #fef3c7; color: #92400e; }
-  .seg.proj  { background: #f1f5f9; color: #475569; }
+  .seg.date   { background: #dbeafe; color: #1e40af; }
+  .seg.type   { background: #dcfce7; color: #166534; }
+  .seg.chan   { background: #ede9fe; color: #5b21b6; }
+  .seg.region { background: #fef3c7; color: #92400e; }
+  .seg.proj   { background: #f1f5f9; color: #475569; }
   .seg-sep { font-size: 12px; color: #bbb; font-weight: 500; }
-  .footer { display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; }
+  .footer { display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; flex-wrap: wrap; gap: 8px; }
   .reset-btn { font-size: 12px; color: #aaa; background: none; border: none; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; padding: 0; }
   .reset-btn:hover { color: #666; }
   .legend { display: flex; flex-wrap: wrap; gap: 8px; }
   .leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #888; }
-  .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
-  hr { border: none; border-top: 1px solid #eee; margin: 1.5rem 0; }
-  .cheat { margin-top: 0; }
-  .cheat-title { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 10px; }
-  .cheat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  .cheat-section h4 { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #3B6D11; margin-bottom: 6px; }
-  .cheat-row { display: flex; gap: 8px; margin-bottom: 4px; align-items: baseline; }
-  .cheat-code { font-family: "SF Mono","Fira Code","Courier New",monospace; font-size: 11px; font-weight: 700; color: #1a1a1a; min-width: 54px; }
-  .cheat-desc { font-size: 11px; color: #666; line-height: 1.4; }
-  details summary { font-size: 11px; color: #888; cursor: pointer; list-style: none; display: flex; align-items: center; gap: 4px; margin-top: 1rem; }
+  .leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  details { margin-top: 1.25rem; border-top: 1px solid #eee; padding-top: 1rem; }
+  details summary { font-size: 11px; color: #888; cursor: pointer; list-style: none; display: flex; align-items: center; gap: 5px; user-select: none; }
   details summary::-webkit-details-marker { display: none; }
-  details[open] summary { color: #555; margin-bottom: 0.75rem; }
-  .chevron { transition: transform 0.2s; font-style: normal; }
-  details[open] .chevron { transform: rotate(90deg); display: inline-block; }
+  details[open] summary { color: #555; margin-bottom: 1rem; }
+  .chevron { transition: transform 0.2s; display: inline-block; font-style: normal; }
+  details[open] .chevron { transform: rotate(90deg); }
+  .cheat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; }
+  .cheat-section h4 { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #3B6D11; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #e5f0d0; }
+  .cheat-row { display: flex; gap: 8px; margin-bottom: 5px; align-items: baseline; }
+  .cheat-code { font-family: "SF Mono","Fira Code","Courier New",monospace; font-size: 11px; font-weight: 700; color: #1a1a1a; min-width: 44px; }
+  .cheat-desc { font-size: 11px; color: #666; line-height: 1.4; }
+  .cheat-group { margin-bottom: 12px; }
+  .cheat-group-label { font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+  @media (max-width: 600px) { .cheat-grid { grid-template-columns: 1fr; } .fields-row { grid-template-columns: 1fr 1fr; } }
 </style>
 </head>
 <body>
@@ -84,15 +85,34 @@
       <label>Channel <span class="req">★</span></label>
       <select id="f-chan">
         <option value="">Select…</option>
-        <option value="GADW">GADW — Google Ads</option>
-        <option value="PMAX">PMAX — Performance Max</option>
-        <option value="INST">INST — Instagram</option>
-        <option value="DISP">DISP — Display</option>
-        <option value="TKOK">TKOK — TikTok</option>
-        <option value="VIDO">VIDO — Video & YouTube</option>
-        <option value="CCTV">CCTV — Connected TV</option>
-        <option value="AFFL">AFFL — Affiliate</option>
-        <option value="OMNI">OMNI — Multi-channel</option>
+        <optgroup label="Search & Shopping">
+          <option value="GADW">GADW — Google Ads</option>
+          <option value="PMAX">PMAX — Performance Max</option>
+        </optgroup>
+        <optgroup label="Social">
+          <option value="META">META — Meta Ads (Facebook, Instagram)</option>
+          <option value="TKOK">TKOK — TikTok</option>
+        </optgroup>
+        <optgroup label="Video">
+          <option value="VIDO">VIDO — Video & YouTube</option>
+          <option value="CCTV">CCTV — Connected TV</option>
+        </optgroup>
+        <optgroup label="Display">
+          <option value="DISP">DISP — Display</option>
+        </optgroup>
+        <optgroup label="Native">
+          <option value="TBLA">TBLA — Taboola</option>
+          <option value="OUTB">OUTB — Outbrain</option>
+          <option value="MGID">MGID — MGID</option>
+          <option value="NATI">NATI — Native (Generic)</option>
+        </optgroup>
+        <optgroup label="Mobile Networks">
+          <option value="MLCO">MLCO — Moloco</option>          <option value="MOBN">MOBN — Mobile (Generic)</option>
+        </optgroup>
+        <optgroup label="Other">
+          <option value="AFFL">AFFL — Affiliate</option>
+          <option value="OMNI">OMNI — Multi-channel</option>
+        </optgroup>
       </select>
     </div>
     <div class="field">
@@ -136,30 +156,59 @@
 
   <details>
     <summary><span class="chevron">›</span> Code reference</summary>
-    <hr style="margin-top:0">
     <div class="cheat-grid">
       <div class="cheat-section">
         <h4>Type</h4>
         <div class="cheat-row"><span class="cheat-code">PLAN</span><span class="cheat-desc">Strategy & Planning</span></div>
         <div class="cheat-row"><span class="cheat-code">REPORT</span><span class="cheat-desc">Performance & Analytics</span></div>
         <div class="cheat-row"><span class="cheat-code">ASSET</span><span class="cheat-desc">Creative & Content</span></div>
-        <h4 style="margin-top:12px">Region</h4>
+        <h4 style="margin-top:14px">Region</h4>
         <div class="cheat-row"><span class="cheat-code">GLOBAL</span><span class="cheat-desc">All markets (default)</span></div>
         <div class="cheat-row"><span class="cheat-code">EMEA</span><span class="cheat-desc">Europe, Middle East & Africa</span></div>
         <div class="cheat-row"><span class="cheat-code">APAC</span><span class="cheat-desc">Asia-Pacific</span></div>
         <div class="cheat-row"><span class="cheat-code">AMER</span><span class="cheat-desc">Americas</span></div>
       </div>
       <div class="cheat-section">
-        <h4>Channel</h4>
-        <div class="cheat-row"><span class="cheat-code">GADW</span><span class="cheat-desc">Google Ads</span></div>
-        <div class="cheat-row"><span class="cheat-code">PMAX</span><span class="cheat-desc">Performance Max</span></div>
-        <div class="cheat-row"><span class="cheat-code">INST</span><span class="cheat-desc">Instagram</span></div>
-        <div class="cheat-row"><span class="cheat-code">DISP</span><span class="cheat-desc">Display</span></div>
-        <div class="cheat-row"><span class="cheat-code">TKOK</span><span class="cheat-desc">TikTok</span></div>
-        <div class="cheat-row"><span class="cheat-code">VIDO</span><span class="cheat-desc">Video & YouTube</span></div>
-        <div class="cheat-row"><span class="cheat-code">CCTV</span><span class="cheat-desc">Connected TV</span></div>
-        <div class="cheat-row"><span class="cheat-code">AFFL</span><span class="cheat-desc">Affiliate</span></div>
-        <div class="cheat-row"><span class="cheat-code">OMNI</span><span class="cheat-desc">Multi-channel</span></div>
+        <h4>Channel — Search, Social, Video</h4>
+        <div class="cheat-group">
+          <div class="cheat-group-label">Search & Shopping</div>
+          <div class="cheat-row"><span class="cheat-code">GADW</span><span class="cheat-desc">Google Ads</span></div>
+          <div class="cheat-row"><span class="cheat-code">PMAX</span><span class="cheat-desc">Performance Max</span></div>
+        </div>
+        <div class="cheat-group">
+          <div class="cheat-group-label">Social</div>
+          <div class="cheat-row"><span class="cheat-code">META</span><span class="cheat-desc">Meta Ads (Facebook, Instagram)</span></div>
+          <div class="cheat-row"><span class="cheat-code">TKOK</span><span class="cheat-desc">TikTok</span></div>
+        </div>
+        <div class="cheat-group">
+          <div class="cheat-group-label">Video</div>
+          <div class="cheat-row"><span class="cheat-code">VIDO</span><span class="cheat-desc">Video & YouTube</span></div>
+          <div class="cheat-row"><span class="cheat-code">CCTV</span><span class="cheat-desc">Connected TV / OTT</span></div>
+        </div>
+        <div class="cheat-group">
+          <div class="cheat-group-label">Display</div>
+          <div class="cheat-row"><span class="cheat-code">DISP</span><span class="cheat-desc">Programmatic Display</span></div>
+        </div>
+      </div>
+      <div class="cheat-section">
+        <h4>Channel — Native & Mobile</h4>
+        <div class="cheat-group">
+          <div class="cheat-group-label">Native</div>
+          <div class="cheat-row"><span class="cheat-code">TBLA</span><span class="cheat-desc">Taboola</span></div>
+          <div class="cheat-row"><span class="cheat-code">OUTB</span><span class="cheat-desc">Outbrain</span></div>
+          <div class="cheat-row"><span class="cheat-code">MGID</span><span class="cheat-desc">MGID</span></div>
+          <div class="cheat-row"><span class="cheat-code">NATI</span><span class="cheat-desc">Native (Generic)</span></div>
+        </div>
+        <div class="cheat-group">
+          <div class="cheat-group-label">Mobile Networks</div>
+          <div class="cheat-row"><span class="cheat-code">MLCO</span><span class="cheat-desc">Moloco</span></div>
+          <div class="cheat-row"><span class="cheat-code">MOBN</span><span class="cheat-desc">Mobile (Generic)</span></div>
+        </div>
+        <div class="cheat-group">
+          <div class="cheat-group-label">Other</div>
+          <div class="cheat-row"><span class="cheat-code">AFFL</span><span class="cheat-desc">Affiliate</span></div>
+          <div class="cheat-row"><span class="cheat-code">OMNI</span><span class="cheat-desc">Multi-channel</span></div>
+        </div>
       </div>
     </div>
   </details>
