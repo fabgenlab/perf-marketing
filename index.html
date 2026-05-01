@@ -259,6 +259,7 @@
     document.getElementById('btn-file').classList.toggle('active', mode==='file');
     document.getElementById('btn-folder').classList.toggle('active', mode==='folder');
     document.getElementById('field-date').classList.toggle('hidden', mode==='folder');
+    if(mode==='file'||mode==='folder'){ const cat=document.getElementById('f-cat').value; if(!categoryChannels[cat]) document.getElementById('field-chan').classList.add('hidden'); }
     const area = document.querySelector('.output-area');
     area.classList.toggle('folder-mode', mode==='folder');
     const label = document.querySelector('.output-label');
@@ -271,19 +272,22 @@
   const todayStr = today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
   document.getElementById('f-date').value = todayStr;
 
-  const subChannels = {
-    'SEARCH': [['GADW','Google Ads'],['PMAX','Performance Max']],
-    'SOCIAL': [['META','Meta Ads'],['TKOK','TikTok']],
-    'VIDEO': [['VIDO','Video & YouTube'],['CCTV','Connected TV']],
+  const categoryChannels = {
+    'SEARCH':  [['GADW','Google Ads'],['PMAX','Performance Max']],
+    'SOCIAL':  [['META','Meta Ads (Facebook, Instagram)'],['TKOK','TikTok']],
+    'VIDEO':   [['VIDO','Video & YouTube'],['CCTV','Connected TV']],
+    'DISPLAY': [['DISP','Display']],
+    'NATIVE':  [['TBLA','Taboola'],['OUTB','Outbrain'],['MGID','MGID'],['NATI','Native (Generic)']],
+    'MOBILE':  [['MLCO','Moloco'],['MOBN','Mobile (Generic)']],
   };
 
-  function updateSubChan(){
-    const chan = document.getElementById('f-chan').value;
-    const field = document.getElementById('field-subchan');
-    const sel = document.getElementById('f-subchan');
-    if(subChannels[chan]){
+  function updateChannel(){
+    const cat = document.getElementById('f-cat').value;
+    const field = document.getElementById('field-chan');
+    const sel = document.getElementById('f-chan');
+    if(categoryChannels[cat]){
       sel.innerHTML = '<option value="">Optional</option>' +
-        subChannels[chan].map(([v,l])=>`<option value="${v}">${v} — ${l}</option>`).join('');
+        categoryChannels[cat].map(([v,l])=>`<option value="${v}">${v} — ${l}</option>`).join('');
       field.classList.remove('hidden');
     } else {
       sel.innerHTML = '<option value="">Optional</option>';
@@ -298,21 +302,21 @@
   function generate(){
     const date = document.getElementById('f-date').value || todayStr;
     const type = document.getElementById('f-type').value;
+    const cat = document.getElementById('f-cat').value;
     const chan = document.getElementById('f-chan').value;
     const region = document.getElementById('f-region').value || 'GLOBAL';
-    const subchan = document.getElementById('f-subchan').value;
     const proj = document.getElementById('f-proj').value;
     const display = document.getElementById('fname-display');
     const copyBtn = document.getElementById('copy-btn');
     const segRow = document.getElementById('seg-row');
 
-    if(!type && !chan){ display.textContent='Select Type and Channel to generate your file name'; display.className='fname empty'; copyBtn.style.display='none'; segRow.style.display='none'; return; }
-    if(!type||!chan){ display.textContent=type?'Now select a Channel…':'Now select a Type…'; display.className='fname nudge'; copyBtn.style.display='none'; segRow.style.display='none'; return; }
+    if(!type && !cat){ display.textContent='Select Type and Channel to generate your file name'; display.className='fname empty'; copyBtn.style.display='none'; segRow.style.display='none'; return; }
+    if(!type||!cat){ display.textContent=type?'Now select a Category…':'Now select a Type…'; display.className='fname nudge'; copyBtn.style.display='none'; segRow.style.display='none'; return; }
 
     const folderPath = document.getElementById('folder-path');
 
     if(currentMode === 'folder'){
-      const chanPart = subchan ? chan + '-' + subchan : chan;
+      const chanPart = chan ? cat + '-' + chan : cat;
       const parts = [type, chanPart];
       if(region && region !== 'GLOBAL') parts.push(region);
       if(proj) parts.push(slugify(proj));
@@ -334,14 +338,14 @@
       }).join('<br>');
     } else {
       folderPath.style.display = 'none';
-      const chanSlug = subchan ? chan + '-' + subchan : chan;
+      const chanSlug = chan ? cat + '-' + chan : cat;
       const projSlug = proj ? '_' + slugify(proj) : '';
       const fname = [date, type, chanSlug, region].join('_') + projSlug;
       display.textContent = fname;
       display.className = 'fname';
       copyBtn.style.display = 'flex';
       copyBtn.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>Copy`;
-      const chanDisplay = subchan ? chan + '-' + subchan : chan;
+      const chanDisplay = chan ? cat + '-' + chan : cat;
       const segs = [{val:date,cls:'date'},{val:type,cls:'type'},{val:chanDisplay,cls:'chan'},{val:region,cls:'region'},...(proj?[{val:slugify(proj),cls:'proj'}]:[])];
       segRow.style.display='flex';
       segRow.innerHTML=segs.map((s,i)=>(i>0?`<span class="seg-sep">_</span>`:'')+`<span class="seg ${s.cls}">${s.val}</span>`).join('');
@@ -359,15 +363,16 @@
   }
 
   function resetAll(){
-    ['f-type','f-chan','f-region','f-subchan'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('field-subchan').classList.add('hidden');
+    ['f-type','f-cat','f-chan','f-region'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('field-chan').classList.add('hidden');
     document.getElementById('f-proj').value='';
     document.getElementById('f-date').value=todayStr;
     generate();
   }
 
   document.getElementById('f-chan').addEventListener('change', updateSubChan);
-  ['f-date','f-type','f-region','f-proj','f-subchan'].forEach(id=>{ const el=document.getElementById(id); el.addEventListener('change',generate); el.addEventListener('input',generate); });
+  document.getElementById('f-cat').addEventListener('change', updateChannel);
+  ['f-date','f-type','f-chan','f-region','f-proj'].forEach(id=>{ const el=document.getElementById(id); el.addEventListener('change',generate); el.addEventListener('input',generate); });
 </script>
 </body>
 </html>
