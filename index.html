@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MTA — Touchpoint Timing & Density</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --color-background-primary: #ffffff;
+      --color-background-secondary: #f8fafc;
+      --color-background-info: #eff6ff;
+      --color-text-primary: #0f172a;
+      --color-text-secondary: #475569;
+      --color-text-tertiary: #94a3b8;
+      --color-text-info: #1d4ed8;
+      --color-border-tertiary: rgba(0,0,0,.10);
+      --color-border-secondary: rgba(0,0,0,.18);
+      --color-border-info: #93c5fd;
+      --border-radius-md: 8px;
+      --border-radius-lg: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-background-primary: #0f172a;
+        --color-background-secondary: #1e293b;
+        --color-background-info: #1e3a5f;
+        --color-text-primary: #f1f5f9;
+        --color-text-secondary: #94a3b8;
+        --color-text-tertiary: #64748b;
+        --color-text-info: #93c5fd;
+        --color-border-tertiary: rgba(255,255,255,.10);
+        --color-border-secondary: rgba(255,255,255,.18);
+        --color-border-info: #3b82f6;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--color-background-secondary);
+      color: var(--color-text-primary);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container { max-width: 780px; margin: 0 auto; }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 500;
+      margin-bottom: .25rem;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: var(--color-text-secondary);
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab {
+      padding: 6px 14px;
+      border-radius: var(--border-radius-md);
+      border: 0.5px solid var(--color-border-secondary);
+      background: var(--color-background-primary);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      transition: all .15s;
+    }
+    .tab:hover { background: var(--color-background-secondary); }
+    .tab.active {
+      background: var(--color-background-info);
+      color: var(--color-text-info);
+      border-color: var(--color-border-info);
+    }
+
+    .panel { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .stat-card {
+      background: var(--color-background-secondary);
+      border-radius: var(--border-radius-md);
+      padding: .75rem 1rem;
+    }
+    .stat-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }
+    .stat-val { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+    .stat-sub { font-size: 12px; color: var(--color-text-tertiary); margin-top: 2px; }
+
+    .chart-card {
+      background: var(--color-background-primary);
+      border: 0.5px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-lg);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .chart-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: .75rem; }
+
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    .insight {
+      background: var(--color-background-info);
+      border-radius: var(--border-radius-md);
+      padding: .6rem .9rem;
+      font-size: 12.5px;
+      color: var(--color-text-info);
+      margin-top: .75rem;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 540px) {
+      .panel, .bottom-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1>MTA — Touchpoint timing &amp; density</h1>
+  <p class="subtitle">Select a channel to explore how many touchpoints occur before conversion, when they cluster in the conversion window, and what share happens in the final 24 hours — the "consideration sprint" before purchase.</p>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="panel" id="stats"></div>
+
+  <div class="chart-card">
+    <div class="chart-title">Touchpoints over the conversion window — when do they cluster?</div>
+    <div style="position:relative;height:220px">
+      <canvas id="timelineChart" role="img" aria-label="Touchpoint distribution across the conversion window by day"></canvas>
+    </div>
+    <div id="insight1" class="insight"></div>
+  </div>
+
+  <div class="bottom-grid">
+    <div class="chart-card">
+      <div class="chart-title">Distribution of journey length (# touchpoints)</div>
+      <div style="position:relative;height:180px">
+        <canvas id="distChart" role="img" aria-label="Distribution of number of touchpoints before conversion"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Time compression index — last 24h vs. full window</div>
+      <div style="position:relative;height:180px">
+        <canvas id="burstChart" role="img" aria-label="Share of total touchpoints occurring in the last 24 hours before conversion"></canvas>
+      </div>
+      <div id="insight2" class="insight"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const channels = {
+  "TikTok Ads": {
+    color: "#FF0050", avgTouches: 2.1, medianDays: 12, p75Days: 18,
+    dayDist: [22,8,5,4,4,3,3,3,3,4,5,8,14,12],
+    touchDist: [45,28,14,8,5],
+    burstShare: 18,
+    insight1: "TikTok initiates long-window journeys (~12 day median). The single first touch is often isolated — awareness-only. Conversion happens much later via other channels.",
+    insight2: "Only 18% of TikTok-initiated touches occur in the last 24h. It's a slow-burn initiator — not a closer."
+  },
+  "Google SEM": {
+    color: "#4285F4", avgTouches: 4.8, medianDays: 3, p75Days: 8,
+    dayDist: [5,4,5,5,6,7,8,9,12,10,9,8,12,0],
+    touchDist: [18,22,25,20,15],
+    burstShare: 54,
+    insight1: "SEM journeys are shorter (3-day median) but more interaction-dense. Notice the steep ramp in the final 2 days — users searching branded terms are in active evaluation mode.",
+    insight2: "54% of SEM touches happen in the last 24h. This is the 'consideration sprint' — users do many searches in quick succession before buying."
+  },
+  "Klaviyo Email": {
+    color: "#F97316", avgTouches: 3.2, medianDays: 5, p75Days: 9,
+    dayDist: [4,3,3,3,4,5,6,7,9,10,14,18,14,0],
+    touchDist: [30,35,20,10,5],
+    burstShare: 38,
+    insight1: "Email journeys peak strongly in the last 2 days. The pattern: email received early → re-engagement email triggers final evaluation sprint.",
+    insight2: "38% of email touches happen in the last 24h — often a 're-open' or 'click from cart recovery' right before purchase."
+  },
+  "Meta (FB/IG)": {
+    color: "#1877F2", avgTouches: 2.8, medianDays: 9, p75Days: 16,
+    dayDist: [18,10,7,6,5,5,5,5,6,7,8,9,9,0],
+    touchDist: [38,30,18,10,4],
+    burstShare: 22,
+    insight1: "Meta has a long flat tail similar to TikTok — most touches are passive feed impressions spread over 9 days. Rarely a strong closing channel.",
+    insight2: "Only 22% of Meta touches are in the last 24h, confirming its role as an upper-funnel awareness channel."
+  },
+  "Taboola": {
+    color: "#F59E0B", avgTouches: 1.6, medianDays: 14, p75Days: 21,
+    dayDist: [24,10,7,6,5,5,4,4,4,4,5,6,8,8],
+    touchDist: [60,25,10,4,1],
+    burstShare: 12,
+    insight1: "Taboola shows a very early, single-touch pattern — one article click far from purchase. Very long window, very low density. Pure top-of-funnel initiator.",
+    insight2: "Only 12% of touches in last 24h — the lowest of all channels. Taboola plants a seed weeks before any purchase intent forms."
+  }
+};
+
+const chNames = Object.keys(channels);
+let active = "Google SEM";
+let timelineChart, distChart, burstChart;
+
+const dayLabels = ["D-13","D-12","D-11","D-10","D-9","D-8","D-7","D-6","D-5","D-4","D-3","D-2","D-1","D0"];
+
+function isDark() { return matchMedia("(prefers-color-scheme: dark)").matches; }
+
+function renderTabs() {
+  const el = document.getElementById("tabs");
+  el.innerHTML = "";
+  chNames.forEach(name => {
+    const b = document.createElement("button");
+    b.className = "tab" + (name === active ? " active" : "");
+    b.textContent = name;
+    b.onclick = () => { active = name; render(); };
+    el.appendChild(b);
+  });
+}
+
+function renderStats() {
+  const d = channels[active];
+  document.getElementById("stats").innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Avg touchpoints before conversion</div>
+      <div class="stat-val">${d.avgTouches.toFixed(1)}</div>
+      <div class="stat-sub">across all converting journeys</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Median conversion window</div>
+      <div class="stat-val">${d.medianDays} days</div>
+      <div class="stat-sub">75th percentile: ${d.p75Days} days</div>
+    </div>`;
+}
+
+function render() {
+  renderTabs();
+  renderStats();
+  const d = channels[active];
+  const dark = isDark();
+  const gridColor = dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)";
+  const textColor = dark ? "#8a9bb0" : "#64748b";
+  const axisColor = dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.12)";
+
+  document.getElementById("insight1").textContent = d.insight1;
+  document.getElementById("insight2").textContent = d.insight2;
+
+  if (timelineChart) timelineChart.destroy();
+  timelineChart = new Chart(document.getElementById("timelineChart"), {
+    type: "bar",
+    data: {
+      labels: dayLabels,
+      datasets: [{
+        label: "% of touches",
+        data: d.dayDist,
+        backgroundColor: dayLabels.map((l,i) => i >= 12 ? d.color : (dark ? "rgba(255,255,255,.18)" : "rgba(100,116,139,.18)")),
+        borderColor: dayLabels.map((l,i) => i >= 12 ? d.color : "transparent"),
+        borderWidth: 1,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${Math.round(c.raw)}% of touches` } } },
+      scales: {
+        x: { ticks: { color: textColor, font: { size: 11 } }, grid: { color: gridColor }, border: { color: axisColor } },
+        y: { ticks: { color: textColor, font: { size: 11 }, callback: v => v + "%" }, grid: { color: gridColor }, border: { color: axisColor } }
+      }
+    }
+  });
+
+  if (distChart) distChart.destroy();
+  distChart = new Chart(document.getElementById("distChart"), {
+    type: "bar",
+    data: {
+      labels: ["1","2","3","4","5+"],
+      datasets: [{
+        label: "% of journeys",
+        data: d.touchDist,
+        backgroundColor: d.color + "99",
+        borderColor: d.color,
+        borderWidth: 1,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${Math.round(c.raw)}% of journeys` } } },
+      scales: {
+        x: { title: { display: true, text: "# touchpoints", color: textColor, font: { size: 11 } }, ticks: { color: textColor, font: { size: 11 } }, grid: { display: false }, border: { color: axisColor } },
+        y: { ticks: { color: textColor, font: { size: 11 }, callback: v => v + "%" }, grid: { color: gridColor }, border: { color: axisColor } }
+      }
+    }
+  });
+
+  const allBurst = chNames.map(n => channels[n].burstShare);
+  const allColors = chNames.map(n => n === active ? channels[n].color : (dark ? "rgba(255,255,255,.2)" : "rgba(100,116,139,.2)"));
+  if (burstChart) burstChart.destroy();
+  burstChart = new Chart(document.getElementById("burstChart"), {
+    type: "bar",
+    data: {
+      labels: chNames.map(n => n.split(" ")[0]),
+      datasets: [{
+        label: "% in last 24h",
+        data: allBurst,
+        backgroundColor: allColors,
+        borderColor: allColors,
+        borderWidth: 1,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        title: (items) => chNames[items[0].dataIndex],
+        label: c => `${Math.round(c.raw)}% in last 24h`
+      }}},
+      scales: {
+        x: { ticks: { color: textColor, font: { size: 10 }, autoSkip: false, maxRotation: 30 }, grid: { display: false }, border: { color: axisColor } },
+        y: { max: 70, ticks: { color: textColor, font: { size: 11 }, callback: v => v + "%" }, grid: { color: gridColor }, border: { color: axisColor } }
+      }
+    }
+  });
+}
+
+render();
+</script>
+</body>
+</html>
