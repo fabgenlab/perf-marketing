@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nuropod 2026 — revised forecast</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a18;min-height:100vh;padding:2rem 1rem;}
+.container{max-width:860px;margin:0 auto;}
+.eyebrow{font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:#888;margin-bottom:6px;}
+h1{font-size:26px;font-weight:500;margin-bottom:4px;}
+.subtitle{font-size:14px;color:#666;margin-bottom:2rem;}
+.card{background:#fff;border:0.5px solid rgba(0,0,0,0.1);border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;}
+.section-label{font-size:11px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:#999;margin-bottom:12px;}
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:1.25rem;}
+.metric{background:#f5f5f3;border-radius:8px;padding:14px;}
+.m-label{font-size:11px;color:#888;margin-bottom:4px;}
+.m-val{font-size:22px;font-weight:500;}
+.m-sub{font-size:11px;margin-top:3px;color:#888;}
+.m-sub.red{color:#c0392b;}.m-sub.green{color:#1a7a4a;}
+.ctrl-row{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+.ctrl-label{font-size:13px;color:#555;width:180px;flex-shrink:0;}
+.ctrl-val{font-size:14px;font-weight:500;width:44px;text-align:right;flex-shrink:0;}
+input[type=range]{flex:1;accent-color:#2563eb;cursor:pointer;}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px;font-size:12px;color:#666;}
+.legend span{display:flex;align-items:center;gap:6px;}
+.ld{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.chart-wrap{position:relative;width:100%;height:280px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;color:#888;font-weight:500;padding:8px 10px;border-bottom:0.5px solid rgba(0,0,0,0.1);}
+td{padding:8px 10px;border-bottom:0.5px solid rgba(0,0,0,0.07);color:#1a1a18;}
+tr:last-child td{border-bottom:none;font-weight:500;background:#f9f9f8;}
+.neg{color:#c0392b;}.pos{color:#1a7a4a;}
+.note{background:#f5f5f3;border-radius:8px;padding:14px 16px;font-size:12px;color:#666;line-height:1.7;margin-top:1rem;}
+</style>
+</head>
+<body>
+<div class="container">
+  <p class="eyebrow">Internal — June 2026</p>
+  <h1>Nuropod USA: revised 2026 forecast</h1>
+  <p class="subtitle">Anchored on January 2026 actuals ($1.43M). Adjust sliders to stress test scenarios.</p>
+
+  <div class="card">
+    <p class="section-label">Adjust growth assumptions</p>
+    <div class="ctrl-row">
+      <span class="ctrl-label">Conservative (MoM %)</span>
+      <input type="range" min="1" max="8" step="1" value="3" id="rCons">
+      <span class="ctrl-val" id="vCons">3%</span>
+    </div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">Base case (MoM %)</span>
+      <input type="range" min="2" max="15" step="1" value="6" id="rBase">
+      <span class="ctrl-val" id="vBase">6%</span>
+    </div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">Optimistic (MoM %)</span>
+      <input type="range" min="5" max="20" step="1" value="10" id="rOpt">
+      <span class="ctrl-val" id="vOpt">10%</span>
+    </div>
+  </div>
+
+  <div class="metric-grid" id="metricCards"></div>
+
+  <div class="card">
+    <p class="section-label">Monthly forecast vs original budget</p>
+    <div class="legend">
+      <span><span class="ld" style="background:#aaa"></span>Original budget</span>
+      <span><span class="ld" style="background:#1D9E75"></span>Base case</span>
+      <span><span class="ld" style="background:#378ADD"></span>Conservative</span>
+      <span><span class="ld" style="background:#D85A30"></span>Optimistic</span>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="fcChart" role="img" aria-label="Nuropod 2026 three scenario forecast vs original budget">Three scenario line chart for Nuropod monthly revenue Jan to Dec 2026.</canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="section-label">Monthly detail — full year 2026</p>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Month</th><th>Actual</th><th>Conservative</th><th>Base case</th><th>Optimistic</th><th>Original budget</th></tr></thead>
+        <tbody id="detailBody"></tbody>
+      </table>
+    </div>
+    <div class="note" id="noteBox"></div>
+  </div>
+</div>
+
+<script>
+const JAN=1427952;
+const ACT={'Jan 26':1427952,'Feb 26':1178334,'Mar 26':1499432,'Apr 26':1326255,'May 26':1798668};
+const OB={'Jan 26':1268802,'Feb 26':1512000,'Mar 26':1260000,'Apr 26':1680000,'May 26':2552000,'Jun 26':2160000,'Jul 26':2376000,'Aug 26':2613600,'Sep 26':2874960,'Oct 26':3162456,'Nov 26':3478702,'Dec 26':3826572};
+const MO=['Jan 26','Feb 26','Mar 26','Apr 26','May 26','Jun 26','Jul 26','Aug 26','Sep 26','Oct 26','Nov 26','Dec 26'];
+let ch;
+function sc(r){const o={};let p=JAN;MO.forEach(function(m){if(ACT[m]){o[m]=ACT[m];p=ACT[m];}else{p=Math.round(p*(1+r/100));o[m]=p;}});return o;}
+function fm(n){return'$'+(n/1e6).toFixed(2)+'M';}
+function fk(n){return'$'+Math.round(n/1000)+'k';}
+function upd(){
+  var cv=+document.getElementById('rCons').value,bv=+document.getElementById('rBase').value,ov=+document.getElementById('rOpt').value;
+  document.getElementById('vCons').textContent=cv+'%';
+  document.getElementById('vBase').textContent=bv+'%';
+  document.getElementById('vOpt').textContent=ov+'%';
+  var sC=sc(cv),sB=sc(bv),sO=sc(ov);
+  var fC=MO.reduce(function(s,m){return s+sC[m];},0),fB=MO.reduce(function(s,m){return s+sB[m];},0),fO=MO.reduce(function(s,m){return s+sO[m];},0),fOB=Object.values(OB).reduce(function(a,v){return a+v;},0);
+  document.getElementById('metricCards').innerHTML='<div class="metric"><p class="m-label">Conservative</p><p class="m-val">'+fm(fC)+'</p><p class="m-sub">'+cv+'% MoM</p></div><div class="metric"><p class="m-label">Base case</p><p class="m-val">'+fm(fB)+'</p><p class="m-sub">'+bv+'% MoM</p></div><div class="metric"><p class="m-label">Optimistic</p><p class="m-val">'+fm(fO)+'</p><p class="m-sub">'+ov+'% MoM</p></div><div class="metric"><p class="m-label">Original budget</p><p class="m-val">'+fm(fOB)+'</p><p class="m-sub red">Gap vs base: '+fm(fOB-fB)+'</p></div>';
+  var tb=document.getElementById('detailBody');tb.innerHTML='';
+  var tC=0,tB=0,tO=0,tOB=0;
+  MO.forEach(function(m){var ia=!!ACT[m],ob=OB[m],c=sC[m],b=sB[m],o=sO[m];tC+=c;tB+=b;tO+=o;tOB+=ob;var d=b-ob,cl=d>=0?'pos':'neg',ds=(d>=0?'+':'')+fm(d);tb.innerHTML+='<tr><td>'+m+'</td><td>'+(ia?fk(ACT[m]):'<span style="color:#bbb">—</span>')+'</td><td>'+fk(c)+'</td><td>'+fk(b)+' <span class="'+cl+'" style="font-size:11px">('+ds+')</span></td><td>'+fk(o)+'</td><td>'+fk(ob)+'</td></tr>';});
+  tb.innerHTML+='<tr><td>Full year</td><td>—</td><td>'+fm(tC)+'</td><td>'+fm(tB)+'</td><td>'+fm(tO)+'</td><td>'+fm(tOB)+'</td></tr>';
+  var imp=Math.round(Math.pow(OB['Dec 26']/OB['Jan 26'],1/11)*100-100);
+  document.getElementById('noteBox').textContent='Assumptions: all scenarios use Jan 2026 ($'+(JAN/1e6).toFixed(2)+'M) as baseline. Feb to May 2026 actuals are locked in. June onward compounds the selected MoM rate from May actual ($1.80M). The original budget implied ~'+imp+'% average MoM growth from January, which no month sustained.';
+  var gc='rgba(0,0,0,0.07)',tc='#999';
+  var datasets=[
+    {label:'Original budget',data:MO.map(function(m){return OB[m];}),borderColor:'#aaa',borderDash:[6,4],borderWidth:1.5,pointRadius:3,tension:0.3,fill:false},
+    {label:'Base case',data:MO.map(function(m){return sB[m];}),borderColor:'#1D9E75',borderWidth:2.5,pointRadius:4,tension:0.3,fill:false},
+    {label:'Conservative',data:MO.map(function(m){return sC[m];}),borderColor:'#378ADD',borderDash:[4,3],borderWidth:1.5,pointRadius:3,tension:0.3,fill:false},
+    {label:'Optimistic',data:MO.map(function(m){return sO[m];}),borderColor:'#D85A30',borderDash:[4,3],borderWidth:1.5,pointRadius:3,tension:0.3,fill:false}
+  ];
+  if(ch){ch.data.datasets=datasets;ch.update();}
+  else{ch=new Chart(document.getElementById('fcChart'),{type:'line',data:{labels:MO,datasets:datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(x){return x.dataset.label+': '+fm(x.raw);}}}},scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:11},autoSkip:false,maxRotation:45}},y:{grid:{color:gc},ticks:{color:tc,font:{size:11},callback:function(v){return'$'+(v/1e6).toFixed(1)+'M';}},min:0}}}});}
+}
+document.getElementById('rCons').addEventListener('input',upd);
+document.getElementById('rBase').addEventListener('input',upd);
+document.getElementById('rOpt').addEventListener('input',upd);
+upd();
+</script>
+</body>
+</html>
