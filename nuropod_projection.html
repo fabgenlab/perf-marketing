@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nuropod H2 2026 budget projection — Meta, Google, Youtube</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --surface-1: #f7f7f5;
+    --surface-2: #ffffff;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --border: rgba(11,11,11,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1: #1a1a19;
+      --surface-2: #232322;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --border: rgba(255,255,255,0.10);
+    }
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    background: var(--surface-1);
+    color: var(--text-primary);
+    margin: 0;
+    padding: 2rem 1rem;
+  }
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    background: var(--surface-2);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem 1.75rem 1.75rem;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0 0 1.25rem;
+  }
+  .sliders {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 1rem;
+  }
+  .slider-block label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .slider-row input[type="range"] {
+    flex: 1;
+  }
+  .slider-row span {
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 56px;
+    text-align: right;
+  }
+  .legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .legend span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 340px;
+  }
+  .note {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Nuropod H2 2026 budget projection</h1>
+
+  <div class="sliders">
+    <div class="slider-block">
+      <label for="metaPeak">Meta Black Friday peak intensity</label>
+      <div class="slider-row">
+        <input type="range" min="0" max="60" value="35" step="5" id="metaPeak" />
+        <span id="metaPeakOut">+35%</span>
+      </div>
+    </div>
+    <div class="slider-block">
+      <label for="ytTotal">Youtube total (Jul-Dec)</label>
+      <div class="slider-row">
+        <input type="range" min="100000" max="600000" value="300000" step="25000" id="ytTotal" />
+        <span id="ytOut">$300k</span>
+      </div>
+    </div>
+    <div class="slider-block">
+      <label for="googleBase">Google base budget increase (Jul onward)</label>
+      <div class="slider-row">
+        <input type="range" min="0" max="100" value="20" step="5" id="googleBase" />
+        <span id="googleBaseOut">+20%</span>
+      </div>
+    </div>
+    <div class="slider-block">
+      <label for="liftSensitivity">Brand search lift sensitivity</label>
+      <div class="slider-row">
+        <input type="range" min="0" max="100" value="40" step="5" id="liftSensitivity" />
+        <span id="liftOut">40%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><span class="swatch" style="background:#0C447C;"></span>Meta</span>
+    <span><span class="swatch" style="background:#1D9E75;"></span>Google</span>
+    <span><span class="swatch" style="background:#E24B4A;"></span>Youtube</span>
+  </div>
+
+  <div class="chart-wrap">
+    <canvas id="liftChart" role="img" aria-label="Stacked bar chart projecting Nuropod monthly Meta, Google, and Youtube spend from May to December 2026. May and June are locked historical actuals unaffected by sliders. July through December respond to Meta seasonal peak, Youtube total, Google base budget, and brand search lift sliders."></canvas>
+  </div>
+
+  <p class="note">May and June are closed actuals and stay fixed. Sliders only affect July through December projections. Google's spend in projected months combines a deliberate base budget increase with a brand search lift modeled as a function of the same month's Youtube spend &mdash; this lift relationship is a modeling assumption, not a measured effect, since Youtube has no spend history at Nuropod yet.</p>
+</div>
+
+<script>
+const months = ['May 26 (actual)','Jun 26 (actual)','Jul 26','Aug 26','Sep 26','Oct 26','Nov 26','Dec 26'];
+const mayMeta = 572193, mayGoogle = 145912;
+const juneMeta = 572193, juneGoogle = 145912;
+const metaShape = [1.00,1.05,1.12,1.20,1.00,0.96];
+const googleBaseShape = [1.00,1.03,1.06,1.10,1.00,0.97];
+const ytShape = [25,50,70,60,50,45];
+const ytShapeSum = ytShape.reduce(function(a,b){return a+b;},0);
+
+const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+const axisColor = '#898781';
+const gridColor = isDark ? '#2c2c2a' : '#e1e0d9';
+
+const canvasEl = document.getElementById('liftChart');
+const chart = new Chart(canvasEl, {
+  type: 'bar',
+  data: { labels: months, datasets: [
+    { label: 'Meta', data: new Array(8).fill(0), backgroundColor: '#0C447C', stack: 's' },
+    { label: 'Google', data: new Array(8).fill(0), backgroundColor: '#1D9E75', stack: 's' },
+    { label: 'Youtube', data: new Array(8).fill(0), backgroundColor: '#E24B4A', stack: 's' }
+  ]},
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { autoSkip: false, maxRotation: 30, color: axisColor }, grid: { display: false } },
+      y: { stacked: true, ticks: { color: axisColor, callback: function(v){ return '$'+(v/1000)+'k'; } }, grid: { color: gridColor } }
+    }
+  }
+});
+
+const metaSlider = document.getElementById('metaPeak');
+const ytSlider = document.getElementById('ytTotal');
+const googleBaseSlider = document.getElementById('googleBase');
+const liftSlider = document.getElementById('liftSensitivity');
+
+function recompute() {
+  const metaPeakPct = Number(metaSlider.value);
+  const ytTotal = Number(ytSlider.value);
+  const googleBasePct = Number(googleBaseSlider.value);
+  const liftPct = Number(liftSlider.value);
+  const liftSens = liftPct / 100;
+  const googleBaseMult = 1 + (googleBasePct/100);
+  const metaPeakMult = 1 + (metaPeakPct/100);
+
+  document.getElementById('metaPeakOut').textContent = '+' + metaPeakPct + '%';
+  document.getElementById('ytOut').textContent = '$' + Math.round(ytTotal/1000) + 'k';
+  document.getElementById('googleBaseOut').textContent = '+' + googleBasePct + '%';
+  document.getElementById('liftOut').textContent = liftPct + '%';
+
+  const meta = [mayMeta, juneMeta];
+  const google = [mayGoogle, juneGoogle];
+  const youtube = [0, 0];
+
+  const ytProjected = ytShape.map(function(v){ return Math.round(v/ytShapeSum*ytTotal); });
+  for (let i = 0; i < metaShape.length; i++) {
+    const isNov = (i === 4);
+    meta.push(isNov ? Math.round(mayMeta*metaPeakMult) : Math.round(mayMeta*metaShape[i]));
+    const base = isNov ? Math.round(mayGoogle*googleBaseMult) : Math.round(mayGoogle*googleBaseMult*googleBaseShape[i]);
+    const priorYt = ytProjected[i];
+    const liftFraction = priorYt / 100000;
+    const liftMultiplier = 1 + (liftFraction * liftSens * 0.18);
+    google.push(Math.round(base * (i === 0 ? 1 : liftMultiplier)));
+    youtube.push(ytProjected[i]);
+  }
+
+  chart.data.datasets[0].data = meta;
+  chart.data.datasets[1].data = google;
+  chart.data.datasets[2].data = youtube;
+  chart.update('none');
+}
+
+metaSlider.addEventListener('input', recompute);
+ytSlider.addEventListener('input', recompute);
+googleBaseSlider.addEventListener('input', recompute);
+liftSlider.addEventListener('input', recompute);
+recompute();
+</script>
+</body>
+</html>
